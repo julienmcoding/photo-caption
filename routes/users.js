@@ -1,7 +1,9 @@
 const userRouter = require('express').Router();
 const { sequelize, User, photo } = require('../models');
+
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
+
 
 module.exports = userRouter;
 
@@ -30,11 +32,19 @@ userRouter.post('/login', async(req, res) => {
         where: { email: req.body.email }
     });
     if(user == null) {
-        return res.status(400).send('Cannot find user');
+        return res.status(404).send('Cannot find user');
     }
     try {
         if (await bcrypt.compare(req.body.password, user.password)) {
             res.send('Sucess');
+            const token = user.generateToken();
+            return res.header("authorization", token).status(200).send({
+                name: user.name,
+                email: user.email,
+                token: token
+            });
+            /*const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET);
+            res.json({ accessToken: accessToken });*/
         } else {
             res.send('Incorrect password or username')
         }

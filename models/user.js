@@ -1,4 +1,6 @@
 'use strict';
+const jwt = require('jsonwebtoken');
+const config = require('../config/config.json');
 const {
   Model
 } = require('sequelize');
@@ -14,6 +16,13 @@ module.exports = (sequelize, DataTypes) => {
       this.hasMany(photo, { foreignKey: 'userId', as: 'photos' });
     }
 
+    generateToken() {
+      return jwt.sign({
+          id: this.id,
+          email: this.email
+        },
+        config.privateKey);
+    }
     toJSON(){
       return {...this.get(), id: undefined };
     }
