@@ -1,13 +1,43 @@
 const userRouter = require('express').Router();
 const { sequelize, User, photo } = require('../models');
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
 
 module.exports = userRouter;
 
 userRouter.post('/', async(req, res) => {
-    const { name, email, password } = req.body;
     try {
-        const user = await User.create({ name, email, password });
-        return res.json(user);
+        await bcrypt.hash(req.body.password, saltRounds, function (err, hash) {
+            return User.create({
+                name: req.body.name,
+                email: req.body.email,
+                password: hash
+              })      
+              .then((user) => res.status(201).send({
+                id: user.id,
+                name: user.name,
+                email: user.email
+              }))
+            })
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json(err);
+    };
+});
+
+userRouter.post('/login', async(req, res) => {
+    const user = await User.findOne({
+        where: { email: req.body.email }
+    });
+    if(user == null) {
+        return res.status(400).send('Cannot find user');
+    }
+    try {
+        if (await bcrypt.compare(req.body.password, user.password)) {
+            res.send('Sucess');
+        } else {
+            res.send('Incorrect password or username')
+        }
     } catch (err) {
         console.log(err);
         return res.status(500).json(err);
